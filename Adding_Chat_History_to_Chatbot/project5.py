@@ -10,7 +10,7 @@ from langchain_community.vectorstores.faiss import FAISS
 from langchain.chains import create_retrieval_chain
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import MessagesPlaceholder
-
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 
 load_dotenv()
 
@@ -53,9 +53,22 @@ def create_chain(vectoreStore):
         prompt=prompt
     )
 
+    retriever_prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", "{input}"),
+        ("human", "Given the above conversation, generate a seach query to look up in order to get information relevant to the conversation")
+    ])
+
     retriever = vectorStore.as_retriever(search_kwargs={"k":3})
+    history_aware_retriever = create_history_aware_retriever(
+        llm=model,
+        retriever=retriever,
+        prompt=retriever_prompt,
+    )
+
     retrieval_chain = create_retrieval_chain(
-        retriever, 
+        # retriever, 
+        history_aware_retriever,
         chain
     )
 
